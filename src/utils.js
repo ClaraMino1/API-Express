@@ -11,7 +11,13 @@ const __dirname = dirname(filePath);
 export default __dirname;
 
 export function generateToken(user) {
-    return jwt.sign(user, env.JWT_SECRET);
+    return jwt.sign({
+        _id: user._id,
+        email: user.email,
+        role: user.role,
+        first_name: user.first_name,
+        last_name: user.last_name
+    }, env.JWT_SECRET);
 }
 
 export function validateToken(token, secret) {
@@ -39,7 +45,7 @@ export function customPassportCall(strategy) {
         passport.authenticate(strategy, (error, user, info) => {
             if (error) return next(error)
             if (!user) {
-                return res.status(401).json({ error: info.messages ? info.messages : info.toString() })
+                return res.status(401).json({ error: info.messages })
             }
             req.user = user;
             next();

@@ -1,6 +1,4 @@
 import { Router } from "express";
-import { validateJwtSession, validateSession } from "../middlewares/session.middlewares.js";
-import passport from "passport";
 import { customPassportCall } from "../utils.js";
 
 const router = Router();
@@ -15,6 +13,16 @@ router.get("/register", async (req, res) => {
 
 router.get("/failed-register", async (req, res) => {
     res.send("el registro falló, intente de nuevo")
+});
+
+router.get("/forgot-password", (req, res) => {
+    res.render("forgot-password");
+});
+
+router.get("/reset-password", (req, res) => {
+    const { token } = req.query;
+
+    res.render("reset-password", { token });
 });
 
 

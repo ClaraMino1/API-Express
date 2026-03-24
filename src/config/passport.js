@@ -4,8 +4,11 @@ import { Strategy as GitHubStrategy } from "passport-github2";
 import { cookieExtractor } from "../utils.js";
 import { ExtractJwt, Strategy as JWTStrategy } from "passport-jwt";
 import { userModel } from "../models/userModel.js";
-import { hashPassword, verifyPassword } from "../utils.js";
+import { verifyPassword } from "../utils.js";
 import { env } from "../config/env.js";
+import UsersDAO from "../models/dao/UsersDAO.js";
+import { UsersDTO } from "../models/dto/UsersDTO.js";
+import { welcome } from "./mailing.js";
 
 function initializePassport() {
 
@@ -18,16 +21,20 @@ function initializePassport() {
         },
             async (req, email, password, done) => {
                 try {
-                    // HICE UN CAMBIO EN EL FRONT PARA MOSTRAR LA UTILIDAD DE
-                    // passReqToCallback Y GUARDAR MAS CAMPOS DE FORMULARIO
                     const user = req.body;
-                    const userExists = await userModel.findOne({ email });
+                    const userExists = await UsersDAO.findByEmail(email);
                     if (userExists) {
                         console.log("ya existe una cuenta para ese mail");
                         return done(null, false);
                     }
-                    const hashedPassword = hashPassword(password);
-                    const newUser = await userModel.create({ ...user, password: hashedPassword });
+                    const newUser = await UsersDAO.create(new UsersDTO().saveUser(user));
+
+                    if(newUser){
+                        await welcome(newUser.email);
+                    }else{
+                        return done(new Error("no se pudo crear el usuario"), false);
+                    }
+
                     return done(null, newUser);
                 } catch (error) {
                     return done(error.message);

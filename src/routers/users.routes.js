@@ -1,43 +1,38 @@
 import { Router, json, urlencoded } from "express";
-import { userModel } from "../models/userModel.js";
-import { hashPassword } from "../utils.js";
 import passport from "passport";
+import { getAll, updateUser, deleteUser } from "../controllers/users.controllers.js";
+import { authorize } from "../middlewares/auth.js";
+import { customPassportCall } from "../utils.js";
 
 const router = Router();
 
-router.get("/", async (req, res) => {
-    try {
-        const users = await userModel.find({});
-        res.json(users);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+router.get("/", getAll);
 
-router.use(json(), urlencoded({extended:false}));
+router.use(json(), urlencoded({ extended: false }));
 
-router.post("/", 
-    passport.authenticate("register", { 
-        session: false, 
-        failureRedirect: "/register-failed" 
-    }), 
+router.post("/",
+    passport.authenticate("register", {
+        session: false,
+        failureRedirect: "/register-failed"
+    }),
     (req, res) => {
         res.redirect("/login");
     }
 );
 
-router.put("/", async (req, res) => {
-    const {email} = req.query;
-    const update = req.body;
-    const updatedUser = await userModel.updateOne({email}, update);
-    res.json(updatedUser);
-});
+//solamente un admin puede eliminar o actualizar un usuario
+router.put(
+    "/",
+    customPassportCall("jwt"),
+    authorize(["admin"]),
+    updateUser
+);
 
-router.delete("/", async (req, res) => {
-    const {email} = req.body;
-    const deletedUser = await userModel.deleteOne({email});
-
-    res.json(deletedUser);
-});
+router.delete(
+    "/",
+    customPassportCall("jwt"),
+    authorize(["admin"]),
+    deleteUser
+);
 
 export default router;

@@ -2,22 +2,19 @@ import express from "express";
 import __dirname from "./utils.js";
 import handlebars from "express-handlebars";
 import cookieParser from "cookie-parser";
-
 import usersRouter from "./routers/users.routes.js";
 import sessionsRouter from "./routers/sessions.routes.js"
 import viewsRouter from "./routers/views.routes.js"
-
-import { mongoConnect } from "./config/database.js";
-
+import MongoSingleton from "./config/database.js";
 import session from "express-session";
 import MongoStore from "connect-mongo";
-
 import passport from "passport";
 import initializePassport from "./config/passport.js";
 import { env } from "./config/env.js";
-
+import cors from "cors";
 
 const app = express();
+
 app.engine("handlebars", handlebars.engine());
 app.set("view engine", "handlebars");
 app.set("views", __dirname + "/views");
@@ -31,7 +28,6 @@ app.use(express.json());
 initializePassport();
 app.use(passport.initialize());
 
-// MOMENTANEAMENTE VAMOS A DEJAR EL MANEJO DE SESIONES CON MONGO
 app.use(session({
     cookie: {
         maxAge: 3600000,
@@ -50,11 +46,13 @@ app.use(session({
 
 app.use(passport.session());
 
+app.use(cors({origin: ['http://127.0.0.1:5500']}));
+
 app.use("/api/sessions", sessionsRouter);
 app.use("/api/users", usersRouter);
 app.use("/", viewsRouter);
 
 app.listen(env.PORT, () => {
     console.log(`servidor escuchando en el puerto ${env.PORT}`);
-    mongoConnect().then(() => console.log("conectado a la DB"))
+    MongoSingleton.getInstance();
 });
